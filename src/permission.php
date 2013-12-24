@@ -12,7 +12,7 @@ trait permission {
             );
             // where is xpath and lang?
             if (!is_null($userUuid)) {
-                $rule_search["actors"] = $userUuid;
+                $rule_search["actors"] = array('$in' => array($userUuid, '*'));
             }
             if (!is_null($action)) {
                 $rule_search["actions"] = array('$in' => array($action, "+$action", "-$action"));
