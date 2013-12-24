@@ -23,6 +23,9 @@ class Document {
                         '[0-9a-f]{4}\-?[0-9a-f]{12}\}?$/i', $uuid) === 1;
     }
 
+
+
+
     private function __construct($mn, $prefix, $documentObject) {
         $this->mn = $mn;
         $this->prefix = $prefix;
@@ -124,7 +127,16 @@ class Document {
     }
 
     function setField($fieldName, $fieldValue) {
+        $changed = true;
+        if (isset($this->documentObject[$fieldName])) {
+            if ($this->documentObject[$fieldName] == $fieldValue) {
+                $changed = false;
+            }
+        }
+
         $this->documentObject[$fieldName] = $fieldValue;
+
+        return $changed;
     }
 
     function save() {
@@ -175,7 +187,7 @@ class Document {
         $entry = null;
         if (!is_null($uuid)) {
             try {
-                $entry = $mn->selectDB($prefix . "data")->documents->findOne(array("uuid" => new MongoId($uuid)));
+                $entry = $mn->selectDB($prefix . "data")->documents->findOne(array("uuid" => $uuid));
 
                 if (!is_null($entry)) {
                     return new self($mn, $prefix, $entry);
@@ -197,8 +209,12 @@ class Document {
         }
     }
 
-    static function create($mn, $prefix, $typeObject) {
-        $obj = new self($mn, $prefix, array("type" => $typeObject->type));
+    static function create($mn, $prefix, $typeObject, $uuid = null) {
+        $item = array("type" => $typeObject->type);
+        if ($uuid) {
+            $item["uuid"] = $uuid;
+        }
+        $obj = new self($mn, $prefix, $item);
         $obj->typeObject = $typeObject;
 
         return $obj;
@@ -228,8 +244,6 @@ class Document {
                     if (isset($itemProperties["no_versioning"]) && $itemProperties["no_versioning"]) {
                         continue;
                     }
-
-                    if (isset())
                 }
             }
         }
