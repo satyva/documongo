@@ -1,32 +1,29 @@
 <?php
 
-class DocumentType{
-    use permission;
+namespace documongo;
+
+class DocumentType extends \documongo\MongoObject {
+
+    use \documongo\permission;
 
     protected $uuid;
-    protected $typeObject;
-
-    protected $mn;
-    protected $prefix;
 
     protected $metaData;
     protected $security;
 
-    private function __construct($mn, $prefix, $typeObject) {
-        $this->mn = $mn;
-        $this->prefix = $prefix;
+    private function __construct($mn, $prefix, $mongoObject) {
+        parent::__construct($mn, $prefix, $mongoObject);
 
         $this->metaData = $mn->selectDB($prefix . "model");
         $this->security = $mn->selectDB($prefix . "security");
 
-        $this->typeObject = $typeObject;
-        $this->uuid = isset($typeObject["name"]) ? $typeObject["name"] : null;
+        $this->uuid = isset($mongoObject["name"]) ? $mongoObject["name"] : null;
     }
 
     function getName($language = null) {
         if (!$this->exists()) throw new Exception("Error Processing Request", 1);
 
-        return isset($this->typeObject["label_" . $language]) ? $this->typeObject["label_" . $language] : ($this->typeObject["name"] . " [$language]");
+        return isset($this->mongoObject["label_" . $language]) ? $this->mongoObject["label_" . $language] : ($this->mongoObject["name"] . " [$language]");
     }
 
     function isPermitted($userUuid, $action, $xpath = null, $lang = null) {
@@ -48,11 +45,6 @@ class DocumentType{
         return $isPermitted;
     }
 
-    function exists() {
-        return !is_null($this->typeObject);
-    }
-
-
     function __get($name) {
         if (!$this->exists()) throw new Exception("Error Processing Request", 1);
 
@@ -61,15 +53,15 @@ class DocumentType{
             return $this->uuid;
             break;
           case 'typeObject':
-            return $this->typeObject;
+            return $this->mongoObject;
             break;
           case 'items':
-            return $this->typeObject["items"];
+            return $this->mongoObject["items"];
             break;
 
           default:
-            if (isset($this->typeObject[$name])) {
-                return $this->typeObject[$name];
+            if (isset($this->mongoObject[$name])) {
+                return $this->mongoObject[$name];
             }
             break;
         }
@@ -96,7 +88,7 @@ class DocumentType{
 
         $currentDateTime = new \DateTime();
 
-        $availablePeriods = isset($this->typeObject["available_periods"]) ? $this->typeObject["available_periods"] : array();
+        $availablePeriods = isset($this->mongoObject["available_periods"]) ? $this->mongoObject["available_periods"] : array();
 
         $isAvailable = true;
 

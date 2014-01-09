@@ -1,5 +1,7 @@
 <?php
 
+namespace documongo;
+
 class MongoObject {
     protected $mn;
     protected $prefix;
@@ -11,6 +13,10 @@ class MongoObject {
         $this->mn = $mn;
         $this->prefix = $prefix;
         $this->mongoObject = $mongoObject;
+
+        if (isset($mongoObject["_id"])) {
+            $this->mongoId = $mongoObject["_id"];
+        }
     }
 
     static function create($mn, $prefix) {

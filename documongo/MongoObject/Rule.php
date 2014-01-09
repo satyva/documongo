@@ -1,6 +1,8 @@
 <?php
 
-class Rule extends MongoObject {
+namespace documongo;
+
+class Rule extends \documongo\MongoObject {
 
     protected function __construct($mn, $prefix, $mongoObject) {
         parent::__construct($mn, $prefix, $mongoObject);

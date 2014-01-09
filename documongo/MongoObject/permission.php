@@ -1,5 +1,7 @@
 <?php
 
+namespace documongo;
+
 trait permission {
 
     protected $permissions;

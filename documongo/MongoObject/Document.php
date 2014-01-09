@@ -1,18 +1,16 @@
 <?php
 
-class Document {
-    use permission;
+namespace documongo;
 
-    protected $documentObject;
+class Document extends \documongo\MongoObject {
+
+    use \documongo\permission;
 
     protected $id;
     protected $uuid;
     protected $type;
 
     protected $typeObject;
-
-    protected $mn;
-    protected $prefix;
 
     protected $metaData;
     protected $realData;
@@ -26,23 +24,18 @@ class Document {
 
 
 
-    private function __construct($mn, $prefix, $documentObject) {
-        $this->mn = $mn;
-        $this->prefix = $prefix;
+    private function __construct($mn, $prefix, $mongoObject) {
+        parent::__construct($mn, $prefix, $mongoObject);
+
+        if (!is_null($mongoObject)) {
+            $this->uuid = isset($this->mongoObject["uuid"]) ? $this->mongoObject["uuid"] : null;
+            $this->type = !empty($this->mongoObject["type"]) ? $this->mongoObject["type"] : null;
+            $this->typeObject = DocumentType::findByType($this->mn, $this->prefix, $this->type);
+        }
 
         $this->metaData = $mn->selectDB($prefix . "model");
         $this->realData = $mn->selectDB($prefix . "data");
         $this->security = $mn->selectDB($prefix . "security");
-
-
-        if (!is_null($documentObject)) {
-            $this->documentObject = $documentObject;
-
-            $this->uuid = isset($this->documentObject["uuid"]) ? $this->documentObject["uuid"] : null;
-            $this->id = isset($this->documentObject["_id"]) ? $this->documentObject["_id"] : null;
-            $this->type = !empty($this->documentObject["type"]) ? $this->documentObject["type"] : null;
-            $this->typeObject = DocumentType::findByType($this->mn, $this->prefix, $this->type);
-        }
     }
 
     function isPermitted($userUuid, $action, $xpath = null, $lang = null) {
@@ -79,17 +72,13 @@ class Document {
         return $isPermitted;
     }
 
-    function exists() {
-        return !is_null($this->id);
-    }
-
 
     function __get($name) {
         // if (!$this->exists()) throw new Exception("Error Processing Request", 1);
 
         switch ($name) {
           case 'id':
-            return $this->id;
+            return $this->mongoId;
             break;
           case 'uuid':
             return $this->uuid;
@@ -102,7 +91,7 @@ class Document {
             break;
 
           case 'fields':
-            return $this->documentObject;
+            return $this->mongoObject;
 
           default:
             # code...
@@ -128,31 +117,31 @@ class Document {
 
     function setField($fieldName, $fieldValue) {
         $changed = true;
-        if (isset($this->documentObject[$fieldName])) {
-            if ($this->documentObject[$fieldName] == $fieldValue) {
+        if (isset($this->mongoObject[$fieldName])) {
+            if ($this->mongoObject[$fieldName] == $fieldValue) {
                 $changed = false;
             }
         }
 
-        $this->documentObject[$fieldName] = $fieldValue;
+        $this->mongoObject[$fieldName] = $fieldValue;
 
         return $changed;
     }
 
     function save() {
-        $status = $this->realData->documents->update(array("_id" => $this->id), $this->documentObject, array("upsert" => true));
+        $status = $this->realData->documents->update(array("_id" => $this->mongoId), $this->mongoObject, array("upsert" => true));
 
         $ok = $status === true || isset($status["ok"]);
         if ($ok && !$status["updatedExisting"]) {
-            $this->id = (string)$status["upserted"];
-            $this->documentObject = $this->realData->documents->findOne(array("_id" => new MongoId($this->id)));
-            $this->uuid = isset($this->documentObject["uuid"]) ? $this->documentObject["uuid"] : null;
+            $this->mongoId = (string)$status["upserted"];
+            $this->mongoObject = $this->realData->documents->findOne(array("_id" => new MongoId($this->mongoId)));
+            $this->uuid = isset($this->mongoObject["uuid"]) ? $this->mongoObject["uuid"] : null;
         }
         return $ok;
     }
 
     function delete() {
-        $status = $this->realData->documents->remove(array("_id" => $this->id));
+        $status = $this->realData->documents->remove(array("_id" => $this->mongoId));
 
         $ok = $status === true || isset($status["ok"]);
         return $ok;
@@ -235,7 +224,7 @@ class Document {
     function saveVersion($versionLabel, $versionDescription) {
         $versionId = null;
 
-        if (!is_null($this->documentObject) && is_array($this->documentObject)) {
+        if (!is_null($this->mongoObject) && is_array($this->mongoObject)) {
 
             if ($this->typeObject && isset($this->typeObject["items"]) && is_array($this->typeObject["items"])) {
                 $versionItemsContent = array();
