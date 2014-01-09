@@ -91,4 +91,33 @@ class DocumentType{
             return new self($mn, $prefix, $entry);
         }
     }
+
+    function isAvailable() {
+
+        $currentDateTime = new \DateTime();
+
+        $availablePeriods = isset($this->typeObject["available_periods"]) ? $this->typeObject["available_periods"] : array();
+
+        $isAvailable = true;
+
+        foreach ($availablePeriods as $availablePeriod) {
+            $availablePeriodSince = isset($availablePeriod["since"]) ? new \DateTime($availablePeriod["since"]) : null;
+            $availablePeriodTill = isset($availablePeriod["till"]) ? new \DateTime($availablePeriod["till"]) : null;
+            $availablePeriodAvailable = $availablePeriod["available"];
+
+            if (!is_null($availablePeriodSince) && !is_null($availablePeriodTill) && $availablePeriodSince <= $currentDateTime && $currentDateTime <= $availablePeriodTill) {
+                $isAvailable = $availablePeriodAvailable;
+            } elseif (!is_null($availablePeriodSince) && $availablePeriodSince <= $currentDateTime) {
+                $isAvailable = $availablePeriodAvailable;
+            } elseif (!is_null($availablePeriodTill) && $currentDateTime <= $availablePeriodTill) {
+                $isAvailable = $availablePeriodAvailable;
+            }
+
+            if (!$isAvailable) {
+                break;
+            }
+        }
+
+        return $isAvailable;
+    }
 }
