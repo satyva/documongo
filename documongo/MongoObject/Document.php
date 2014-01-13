@@ -195,15 +195,19 @@ class Document extends \documongo\MongoObject {
         }
     }
 
-    static function create($mn, $prefix, $typeObject, $uuid = null) {
-        $item = array("type" => $typeObject->type);
-        if ($uuid) {
-            $item["uuid"] = $uuid;
-        }
-        $obj = new self($mn, $prefix, $item);
-        $obj->typeObject = $typeObject;
+    static function create($mn, $prefix, $typeObject = null, $uuid = null) {
+        if (!is_null($typeObject)) {
+            $item = array("type" => $typeObject->type);
+            if ($uuid) {
+                $item["uuid"] = $uuid;
+            }
+            $obj = new self($mn, $prefix, $item);
+            $obj->typeObject = $typeObject;
 
-        return $obj;
+            return $obj;
+        } else {
+            return parent::create($mn, $prefix);
+        }
     }
 
 
