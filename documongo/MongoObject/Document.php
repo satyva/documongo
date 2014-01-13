@@ -1,12 +1,11 @@
 <?php
 
-namespace documongo;
+namespace documongo\MongoObject;
 
 class Document extends \documongo\MongoObject {
 
     use \documongo\permission;
 
-    protected $id;
     protected $uuid;
     protected $type;
 
@@ -22,9 +21,7 @@ class Document extends \documongo\MongoObject {
     }
 
 
-
-
-    private function __construct($mn, $prefix, $mongoObject) {
+    protected function __construct($mn, $prefix, $mongoObject) {
         parent::__construct($mn, $prefix, $mongoObject);
 
         if (!is_null($mongoObject)) {
@@ -62,7 +59,7 @@ class Document extends \documongo\MongoObject {
 
 
         // if (!$this->exists()) {
-        //     // throw new Exception("Error Processing Request", 1);
+        //     // throw new \Exception("Error Processing Request", 1);
         // }
 
         if (is_null($isPermitted)) {
@@ -74,11 +71,11 @@ class Document extends \documongo\MongoObject {
 
 
     function __get($name) {
-        // if (!$this->exists()) throw new Exception("Error Processing Request", 1);
+        // if (!$this->exists()) throw new \Exception("Error Processing Request", 1);
 
         switch ($name) {
           case 'id':
-            return $this->mongoId;
+            return (string)$this->mongoId;
             break;
           case 'uuid':
             return $this->uuid;
@@ -133,8 +130,8 @@ class Document extends \documongo\MongoObject {
 
         $ok = $status === true || isset($status["ok"]);
         if ($ok && !$status["updatedExisting"]) {
-            $this->mongoId = (string)$status["upserted"];
-            $this->mongoObject = $this->realData->documents->findOne(array("_id" => new MongoId($this->mongoId)));
+            $this->mongoId = $status["upserted"];
+            $this->mongoObject = $this->realData->documents->findOne(array("_id" => $this->mongoId));
             $this->uuid = isset($this->mongoObject["uuid"]) ? $this->mongoObject["uuid"] : null;
         }
         return $ok;
@@ -162,7 +159,7 @@ class Document extends \documongo\MongoObject {
         $entry = null;
         if (!is_null($id)) {
             try {
-                $entry = $mn->selectDB($prefix . "data")->documents->findOne(array("_id" => new MongoId($id)));
+                $entry = $mn->selectDB($prefix . "data")->documents->findOne(array("_id" => new \MongoId($id)));
 
                 if (!is_null($entry)) {
                     return new self($mn, $prefix, $entry);

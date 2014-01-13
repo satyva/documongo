@@ -1,6 +1,6 @@
 <?php
 
-namespace documongo;
+namespace documongo\MongoObject;
 
 class Rule extends \documongo\MongoObject {
 
@@ -65,7 +65,7 @@ class Rule extends \documongo\MongoObject {
         $ok = $status === true || isset($status["ok"]);
         if ($ok && !$status["updatedExisting"]) {
             $this->mongoId = (string)$status["upserted"];
-            $this->mongoObject = $this->security->rules->findOne(array("_id" => new MongoId($this->mongoId)));
+            $this->mongoObject = $this->security->rules->findOne(array("_id" => new \MongoId($this->mongoId)));
         }
         return $ok;
     }

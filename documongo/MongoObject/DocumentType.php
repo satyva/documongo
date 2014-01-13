@@ -1,6 +1,6 @@
 <?php
 
-namespace documongo;
+namespace documongo\MongoObject;
 
 class DocumentType extends \documongo\MongoObject {
 
@@ -11,7 +11,7 @@ class DocumentType extends \documongo\MongoObject {
     protected $metaData;
     protected $security;
 
-    private function __construct($mn, $prefix, $mongoObject) {
+    protected function __construct($mn, $prefix, $mongoObject) {
         parent::__construct($mn, $prefix, $mongoObject);
 
         $this->metaData = $mn->selectDB($prefix . "model");
@@ -21,14 +21,14 @@ class DocumentType extends \documongo\MongoObject {
     }
 
     function getName($language = null) {
-        if (!$this->exists()) throw new Exception("Error Processing Request", 1);
+        if (!$this->exists()) throw new \Exception("Error Processing Request", 1);
 
         return isset($this->mongoObject["label_" . $language]) ? $this->mongoObject["label_" . $language] : ($this->mongoObject["name"] . " [$language]");
     }
 
     function isPermitted($userUuid, $action, $xpath = null, $lang = null) {
 
-        if (!$this->exists()) throw new Exception("Error Processing Request", 1);
+        if (!$this->exists()) throw new \Exception("Error Processing Request", 1);
 
         if (empty($xpath) || $xpath == "/") {
             $xpath = "";
@@ -46,7 +46,7 @@ class DocumentType extends \documongo\MongoObject {
     }
 
     function __get($name) {
-        if (!$this->exists()) throw new Exception("Error Processing Request", 1);
+        if (!$this->exists()) throw new \Exception("Error Processing Request", 1);
 
         switch ($name) {
           case 'type':

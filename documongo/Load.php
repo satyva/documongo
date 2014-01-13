@@ -8,8 +8,6 @@ function Load($class) {
 
     if(is_file($file))
         include_once $file;
-
-    echo $file;
 }
 spl_autoload_register("documongo\Load");
 if(in_array("__autoload", spl_autoload_functions()))

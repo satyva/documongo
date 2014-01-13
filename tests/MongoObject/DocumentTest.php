@@ -8,15 +8,12 @@ use \documongo\MongoObject\Document;
 
 class DocumentTest extends PHPUnit_Framework_TestCase
 {
-    public function testCreate()
+
+    /**
+     * @dataProvider providerCreate
+     */
+    public function testCreateDelete($mn, $prefix, $typeObject, $uuid)
     {
-
-        $mn = new \MongoClient();
-        $prefix = "temp_test_";
-
-        $typeObject = DocumentType::findByType($mn, $prefix, "faculty");
-
-        $uuid = "test-uuid";
 
         $testDocument = Document::create($mn, $prefix, $typeObject, $uuid);
 
@@ -25,6 +22,8 @@ class DocumentTest extends PHPUnit_Framework_TestCase
         $ok = $testDocument->save();
 
         $this->assertEquals($ok, true);
+
+        $this->assertEquals($testDocument->uuid, $uuid);
 
 
         $testDocument2 = Document::findByUuid($mn, $prefix, $uuid);
@@ -37,5 +36,18 @@ class DocumentTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($deleted, true);
     }
+
+    public function providerCreate()
+    {
+        $mn = new \MongoClient();
+        $prefix = "temp_test_";
+
+        $typeObject = DocumentType::findByType($mn, $prefix, "faculty");
+
+        $uuid = "test-uuid";
+
+        return array(array($mn, $prefix, $typeObject, $uuid));
+    }
+
 }
 
