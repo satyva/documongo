@@ -67,6 +67,27 @@ class DocumentType extends \documongo\MongoObject {
         }
     }
 
+    function getItemI18nName($itemName, $language) {
+        $itemI18nName = null;
+
+        if (isset($this->mongoObject["items"]) && is_array($this->mongoObject["items"])) {
+            $items = $this->mongoObject["items"];
+
+            foreach ($items as $item) {
+                if (isset($item["name"]) && $itemName == $item["name"]) {
+
+                    $itemNoI18n = isset($item["no_i18n"]) ? (boolean)$item["no_i18n"] : false;
+
+                    $itemI18nName = $itemNoI18n ? $itemName : ($itemName . "_" . $language);
+                    break;
+                }
+            }
+        }
+
+
+        return $itemI18nName;
+    }
+
     static function find($mn, $prefix) {
         $elems = array();
         $entries = $mn->selectDB($prefix . "model")->types->find();
@@ -84,32 +105,120 @@ class DocumentType extends \documongo\MongoObject {
         }
     }
 
-    function isAvailable() {
+
+    function getAvailabilityPeriods() {
+        $availabilityPeriods = isset($this->mongoObject["available_periods"]) ? $this->mongoObject["available_periods"] : array();
+
+        return $availabilityPeriods;
+    }
+
+    function isAvailable(&$availablePeriods = array(), &$futureAvailablePeriods = array(), &$pastAvailablePeriods = array()) {
 
         $currentDateTime = new \DateTime();
 
-        $availablePeriods = isset($this->mongoObject["available_periods"]) ? $this->mongoObject["available_periods"] : array();
+        $availabilityPeriods = $this->getAvailabilityPeriods();
 
-        $isAvailable = true;
+        $isAvailable = null;
 
-        foreach ($availablePeriods as $availablePeriod) {
-            $availablePeriodSince = isset($availablePeriod["since"]) ? new \DateTime($availablePeriod["since"]) : null;
-            $availablePeriodTill = isset($availablePeriod["till"]) ? new \DateTime($availablePeriod["till"]) : null;
-            $availablePeriodAvailable = $availablePeriod["available"];
+        foreach ($availabilityPeriods as $availabilityPeriod) {
+            $availabilityPeriodSince = isset($availabilityPeriod["since"]) ? new \DateTime($availabilityPeriod["since"]) : null;
+            $availabilityPeriodTill = isset($availabilityPeriod["till"]) ? new \DateTime($availabilityPeriod["till"]) : null;
+            $availabilityPeriodAvailable = $availabilityPeriod["available"];
+            $availabilityPeriodDescription = isset($availabilityPeriod["description"]) ? $availabilityPeriod["description"] : null;
 
-            if (!is_null($availablePeriodSince) && !is_null($availablePeriodTill) && $availablePeriodSince <= $currentDateTime && $currentDateTime <= $availablePeriodTill) {
-                $isAvailable = $availablePeriodAvailable;
-            } elseif (!is_null($availablePeriodSince) && $availablePeriodSince <= $currentDateTime) {
-                $isAvailable = $availablePeriodAvailable;
-            } elseif (!is_null($availablePeriodTill) && $currentDateTime <= $availablePeriodTill) {
-                $isAvailable = $availablePeriodAvailable;
+            $isAvailableElement = null;
+
+            $availablePeriod = array();
+            $availablePeriod["since"] = $availabilityPeriodSince;
+            $availablePeriod["till"] = $availabilityPeriodTill;
+            $availablePeriod["description"] = $availabilityPeriodDescription;
+
+            if (!is_null($availabilityPeriodSince) && !is_null($availabilityPeriodTill)) {
+                if ($availabilityPeriodSince <= $currentDateTime && $currentDateTime < $availabilityPeriodTill) {
+                    $isAvailableElement = $availabilityPeriodAvailable;
+                } elseif ($availabilityPeriodTill <= $currentDateTime) {
+                    $pastAvailablePeriods[] = $availablePeriod;
+                } elseif ($availabilityPeriodSince > $currentDateTime) {
+                    $futureAvailablePeriods[] = $availablePeriod;
+                }
+            } elseif (!is_null($availabilityPeriodSince)) {
+                if ($availabilityPeriodSince <= $currentDateTime) {
+                    $isAvailableElement = $availabilityPeriodAvailable;
+                } elseif ($availabilityPeriodSince > $currentDateTime) {
+                    $futureAvailablePeriods[] = $availablePeriod;
+                }
+            } elseif (!is_null($availabilityPeriodTill)) {
+                if ($currentDateTime <= $availabilityPeriodTill) {
+                    $isAvailableElement = $availabilityPeriodAvailable;
+                } elseif ($availabilityPeriodTill < $currentDateTime) {
+                    $pastAvailablePeriods[] = $availablePeriod;
+                }
             }
 
-            if (!$isAvailable) {
-                break;
+            if (!is_null($isAvailableElement)) {
+                if (is_null($isAvailable)) {
+                    $isAvailable = $isAvailableElement;
+                } else {
+                    $isAvailable = $isAvailable && $isAvailableElement;
+                }
+
+                if ($isAvailable) {
+                    $availablePeriods[] = $availablePeriod;
+
+                    // break;
+                } elseif ($isAvailable === false) {
+                    // break;
+                }
+
+                if (is_null($isAvailable)) {
+                    $isAvailable = false;
+                }
             }
         }
 
         return $isAvailable;
+    }
+
+
+    const PERIOD_NOW = "now";
+    const PERIOD_FUTURE = "future";
+    const PERIOD_PAST = "past";
+
+    function getAvailablePeriods($availablePeriodType = self::PERIOD_NOW) {
+        $nowAvailablePeriods = array();
+        $futureAvailablePeriods = array();
+        $pastAvailablePeriods = array();
+
+        $isAvailable = $this->isAvailable($nowAvailablePeriods, $futureAvailablePeriods, $pastAvailablePeriods);
+
+        $availablePeriods = array();
+
+        switch ($availablePeriodType) {
+            case self::PERIOD_NOW:
+                $availablePeriods = $nowAvailablePeriods;
+                break;
+
+            case self::PERIOD_FUTURE:
+                $availablePeriods = $futureAvailablePeriods;
+                break;
+
+            case self::PERIOD_PAST:
+                $availablePeriods = $pastAvailablePeriods;
+                break;
+
+            default:
+                break;
+        }
+
+
+        return $availablePeriods;
+    }
+
+    function getAvailablePeriod($availablePeriodType = self::PERIOD_NOW) {
+        $availablePeriods = $this->getAvailablePeriods($availablePeriodType);
+
+        $availablePeriod = array_shift($availablePeriods);
+
+        return $availablePeriod;
     }
 }

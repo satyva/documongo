@@ -221,19 +221,48 @@ class Document extends \documongo\MongoObject {
         return $obj;
     }
 
-
-    function saveVersion($versionLabel, $versionDescription) {
+    function saveVersion($versionLabel, $versionDescription, $language) {
         $versionId = null;
 
         if (!is_null($this->mongoObject) && is_array($this->mongoObject)) {
+            if ($this->typeObject && $this->typeObject->items && is_array($this->typeObject->items)) {
+                $versionContent = array();
 
-            if ($this->typeObject && isset($this->typeObject["items"]) && is_array($this->typeObject["items"])) {
-                $versionItemsContent = array();
-
-                foreach ($this->typeObject["items"] as $itemName => $itemProperties) {
-                    if (isset($itemProperties["no_versioning"]) && $itemProperties["no_versioning"]) {
+                foreach ($this->typeObject->items as $item) {
+                    if (isset($item["no_versioning"]) && $item["no_versioning"]) {
                         continue;
                     }
+
+                    if (!isset($item["name"])) {
+                        continue;
+                    }
+                    $itemName = $item["name"];
+                    $fieldI18nName = $this->typeObject->getItemI18nName($itemName, $language);
+                    $fieldI18nValue = $this->getFieldI18nValue($itemName, $language);
+
+                    $versionContent[$fieldI18nName] = $fieldI18nValue;
+                }
+
+                if (!isset($this->mongoObject["versions"])) {
+                    $this->mongoObject["versions"] = array();
+                }
+
+                $versionContentHash = md5(serialize($versionContent));
+
+                $versionObject = array(
+                    "content" => $versionContent
+                    , "content_hash" => $versionContentHash
+                    , "label_$language" => $versionLabel
+                    , "description_$language" => $versionDescription
+                    , "datetime" => new \MongoDate()
+                    , "_id" => new \MongoId()
+                );
+                $this->mongoObject["versions"][] = $versionObject;
+
+                $ok = $this->save();
+
+                if ($ok) {
+                    $versionId = $versionObject["_id"];
                 }
             }
         }
@@ -249,14 +278,66 @@ class Document extends \documongo\MongoObject {
     }
 
     function getVersion($id) {
-        $version = null;
+        if (!($id instanceof \MongoId)) {
+            $id = new \MongoId($id);
+        }
+        $version = $this->realData->documents->findOne(array("_id" => $id));
 
         return $version;
     }
 
-    function findVersions($dateStart, $dateFinish) {
+    function findVersions($dateStart = null, $dateFinish = null) {
+        $versions = array();
+
+        if ($dateStart || $dateFinish) {
+            $andQuery = array();
+            if ($dateStart) {
+                $andQuery['$gte'] = new \MongoDate($dateStart->getTimestamp());
+            }
+            if ($dateFinish) {
+                $andQuery['$lt'] = new \MongoDate($dateFinish->getTimestamp());
+            }
+
+            $query = array(
+                '_id' => $this->mongoId
+                ,
+                'versions'=>array(
+                    '$elemMatch' => array(
+                        'datetime' => $andQuery
+                    )
+                )
+            );
+            $entry = $this->realData->documents->findOne($query, array('versions' => true));
+            if (isset($entry["versions"]) && is_array($entry["versions"])) {
+                $versions = $entry["versions"];
+            }
+            // var_dump($versions);
+        }
+
+        return $versions;
+    }
+
+    function findVersionsFullText($text) {
         $versions = array();
 
         return $versions;
+    }
+
+
+    function getFieldI18nValue($fieldName, $language = null) {
+        $fieldI18nValue = null;
+
+        if (!is_null($this->mongoObject) && is_array($this->mongoObject)) {
+
+            if ($this->typeObject) {
+                $fieldI18nName = $this->typeObject->getItemI18nName($fieldName, $language);
+
+                if (isset($this->mongoObject[$fieldI18nName])) {
+                    $fieldI18nValue = $this->mongoObject[$fieldI18nName];
+                }
+            }
+        }
+
+        return $fieldI18nValue;
     }
 }
