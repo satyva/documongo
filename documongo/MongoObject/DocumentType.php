@@ -207,6 +207,7 @@ class DocumentType extends \documongo\MongoObject {
                 break;
 
             default:
+                $availablePeriods = array_merge($pastAvailablePeriods, $nowAvailablePeriods, $futureAvailablePeriods);
                 break;
         }
 
