@@ -241,6 +241,10 @@ class Document extends \documongo\MongoObject {
                     $fieldI18nValue = $this->getFieldI18nValue($itemName, $language);
 
                     $versionContent[$fieldI18nName] = $fieldI18nValue;
+
+                    if (isset($item["accumulative"]) && !$item["accumulative"]) {
+                        $this->setField($fieldI18nName, "");
+                    }
                 }
 
                 if (!isset($this->mongoObject["versions"])) {
@@ -259,6 +263,7 @@ class Document extends \documongo\MongoObject {
                 );
                 $this->mongoObject["versions"][] = $versionObject;
 
+                // var_dump($this->mongoObject);die;
                 $ok = $this->save();
 
                 if ($ok) {
