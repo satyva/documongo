@@ -8,6 +8,8 @@ class DocumentType extends \documongo\MongoObject {
 
     protected $uuid;
 
+    protected $itemsIndexed;
+
     protected $metaData;
     protected $security;
 
@@ -17,7 +19,20 @@ class DocumentType extends \documongo\MongoObject {
         $this->metaData = $mn->selectDB($prefix . "model");
         $this->security = $mn->selectDB($prefix . "security");
 
-        $this->uuid = isset($mongoObject["name"]) ? $mongoObject["name"] : null;
+        $this->uuid = isset($this->mongoObject["name"]) ? $this->mongoObject["name"] : null;
+
+        $this->indexItems();
+    }
+
+    function indexItems() {
+        $this->itemsIndexed = isset($this->mongoObject["items"]) && is_array($this->mongoObject["items"])
+                                ? array_reduce($this->mongoObject["items"], function($_all_items, $_item) {
+                                        if (isset($_item["name"])) {
+                                            $_all_items[$_item["name"]] = $_item;
+                                        }
+                                        return $_all_items;
+                                    }, array())
+                                : array();
     }
 
     function getName($language = null) {
@@ -33,7 +48,6 @@ class DocumentType extends \documongo\MongoObject {
         if (empty($xpath) || $xpath == "/") {
             $xpath = "";
         }
-
 
 
         $isPermitted = $this->hasPermission($userUuid, $action, $xpath, $lang);
@@ -67,23 +81,26 @@ class DocumentType extends \documongo\MongoObject {
         }
     }
 
+    function getItemProperties($itemName) {
+        $item = null;
+
+        if (isset($this->itemsIndexed[$itemName])) {
+            $item = $this->itemsIndexed[$itemName];
+        }
+
+        return $item;
+    }
+
     function getItemI18nName($itemName, $language) {
         $itemI18nName = null;
 
-        if (isset($this->mongoObject["items"]) && is_array($this->mongoObject["items"])) {
-            $items = $this->mongoObject["items"];
+        if (isset($this->itemsIndexed[$itemName])) {
+            $item = $this->itemsIndexed[$itemName];
 
-            foreach ($items as $item) {
-                if (isset($item["name"]) && $itemName == $item["name"]) {
+            $itemNoI18n = isset($item["no_i18n"]) ? (boolean)$item["no_i18n"] : false;
 
-                    $itemNoI18n = isset($item["no_i18n"]) ? (boolean)$item["no_i18n"] : false;
-
-                    $itemI18nName = $itemNoI18n ? $itemName : ($itemName . "_" . $language);
-                    break;
-                }
-            }
+            $itemI18nName = $itemNoI18n ? $itemName : ($itemName . "_" . $language);
         }
-
 
         return $itemI18nName;
     }
