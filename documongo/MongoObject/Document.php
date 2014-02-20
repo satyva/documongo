@@ -259,6 +259,8 @@ class Document extends \documongo\MongoObject {
                     , "label_$language" => $versionLabel
                     , "description_$language" => $versionDescription
                     , "datetime" => new \MongoDate()
+                    , 'document_uuid' => $this->uuid
+                    , 'document_id' => (string)$this->mongoId
                     , "_id" => new \MongoId()
                 );
                 $this->mongoObject["versions"][] = $versionObject;
@@ -273,6 +275,52 @@ class Document extends \documongo\MongoObject {
         }
 
         return $versionId;
+    }
+
+    function deleteVersion($id) {
+        $deletedVersion = null;
+
+        // $query = array(
+        //     '_id' => $this->mongoId
+        //     , 'versions' => array(
+        //         '$elemMatch' => array(
+        //             '_id' => new \MongoId($id)
+        //         )
+        //     )
+        // );
+
+        // $entry = $this->realData->documents->findOne($query);
+        if (isset($this->mongoObject["versions"]) && is_array($this->mongoObject["versions"])) {
+            foreach ($this->mongoObject["versions"] as $vkey => $version) {
+                if ((string)$version["_id"] && (string)$version["_id"] == $id) {
+                    $deletedVersion = array_splice($this->mongoObject["versions"], $vkey, 1);
+                    break;
+                }
+            }
+        }
+        var_dump(count($this->mongoObject["versions"]));
+        $ok = $this->save();
+
+        return $deletedVersion;
+    }
+
+    function updatedVersion($id, $updateProperties) {
+        $updatedVersion = null;
+
+        if (isset($this->mongoObject["versions"]) && is_array($this->mongoObject["versions"])) {
+            foreach ($this->mongoObject["versions"] as $vkey => $version) {
+                if ((string)$version["_id"] && (string)$version["_id"] == $id) {
+                    foreach ($updateProperties as $propName => $propValue) {
+                        $this->mongoObject["versions"][$vkey][$propName] = $propValue;
+                    }
+                    $updatedVersion = $this->mongoObject["versions"][$vkey];
+                    break;
+                }
+            }
+        }
+        $ok = $this->save();
+
+        return $updatedVersion;
     }
 
     function getAllVersions() {
