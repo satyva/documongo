@@ -221,6 +221,33 @@ class Document extends \documongo\MongoObject {
         return $obj;
     }
 
+    function resetFields($language) {
+        $oldValues = array();
+        if (!is_null($this->mongoObject) && is_array($this->mongoObject)) {
+            if ($this->typeObject && $this->typeObject->items && is_array($this->typeObject->items)) {
+                foreach ($this->typeObject->items as $item) {
+                    if (isset($item["no_versioning"]) && $item["no_versioning"]) {
+                        continue;
+                    }
+
+                    if (!isset($item["name"])) {
+                        continue;
+                    }
+                    $itemName = $item["name"];
+                    $fieldI18nName = $this->typeObject->getItemI18nName($itemName, $language);
+                    $fieldI18nValue = $this->getFieldI18nValue($itemName, $language);
+
+                    if (isset($item["accumulative"]) && !$item["accumulative"]) {
+                        $oldValues[$fieldI18nName] = $fieldI18nValue;
+                        $this->setField($fieldI18nName, "");
+                    }
+                }
+                $ok = $this->save();
+            }
+        }
+        return $oldValues;
+    }
+
     function saveVersion($versionLabel, $versionDescription, $language) {
         $versionId = null;
 
@@ -241,10 +268,6 @@ class Document extends \documongo\MongoObject {
                     $fieldI18nValue = $this->getFieldI18nValue($itemName, $language);
 
                     $versionContent[$fieldI18nName] = $fieldI18nValue;
-
-                    if (isset($item["accumulative"]) && !$item["accumulative"]) {
-                        $this->setField($fieldI18nName, "");
-                    }
                 }
 
                 if (!isset($this->mongoObject["versions"])) {
