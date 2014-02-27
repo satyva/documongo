@@ -72,6 +72,9 @@ class DocumentType extends \documongo\MongoObject {
           case 'items':
             return $this->mongoObject["items"];
             break;
+          case 'itemsIndexed':
+            return $this->itemsIndexed;
+            break;
 
           default:
             if (isset($this->mongoObject[$name])) {
