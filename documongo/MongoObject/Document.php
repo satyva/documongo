@@ -41,7 +41,6 @@ class Document extends \documongo\MongoObject {
         }
 
         $isPermitted = $this->typeObject->hasPermission($userUuid, $action, $xpath, $lang);
-
         if ($this->exists()) {
 
             if ($isPermitted || is_null($isPermitted)) {
@@ -145,8 +144,8 @@ class Document extends \documongo\MongoObject {
     }
 
     static function find($mn, $prefix, $type) {
-        $elems = array();
 
+$elems = array();
         $entries = $mn->selectDB($prefix . "data")->documents->find(array("type" => $type));
         foreach ($entries as $entry) {
             $elems[] = new self($mn, $prefix, $entry);
@@ -239,7 +238,7 @@ class Document extends \documongo\MongoObject {
 
                     if (isset($item["accumulative"]) && !$item["accumulative"]) {
                         $oldValues[$fieldI18nName] = $fieldI18nValue;
-                        $this->setField($fieldI18nName, "");
+                        $this->setField($fieldI18nName, 0.0);
                     }
                 }
                 $ok = $this->save();
@@ -383,6 +382,7 @@ class Document extends \documongo\MongoObject {
                     )
                 )
             );
+            // var_dump($query, $andQuery);
             $entry = $this->realData->documents->findOne($query, array('versions' => true));
             if (isset($entry["versions"]) && is_array($entry["versions"])) {
                 $versions = $entry["versions"];
@@ -417,3 +417,4 @@ class Document extends \documongo\MongoObject {
         return $fieldI18nValue;
     }
 }
+
