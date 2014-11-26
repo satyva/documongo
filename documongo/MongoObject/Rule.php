@@ -3,6 +3,7 @@
 namespace documongo\MongoObject;
 
 class Rule extends \documongo\MongoObject {
+function my_dump($arr){echo '<pre>';var_dump($arr); echo '</pre>';   }
 
     protected function __construct($mn, $prefix, $mongoObject) {
         parent::__construct($mn, $prefix, $mongoObject);

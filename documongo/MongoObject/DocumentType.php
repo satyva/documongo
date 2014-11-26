@@ -48,8 +48,6 @@ class DocumentType extends \documongo\MongoObject {
         if (empty($xpath) || $xpath == "/") {
             $xpath = "";
         }
-
-
         $isPermitted = $this->hasPermission($userUuid, $action, $xpath, $lang);
 
         if (is_null($isPermitted)) {

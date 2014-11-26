@@ -118,15 +118,23 @@ class Document extends \documongo\MongoObject {
                 $changed = false;
             }
         }
-
         $this->mongoObject[$fieldName] = $fieldValue;
-
+        return $changed;
+    }
+    
+    function setVerField($period, $fieldName, $fieldValue) {
+        $changed = true;
+        if (isset($this->mongoObject["versions"][$period]["content"][$fieldName])) {
+            if ($this->mongoObject["versions"][$period]["content"][$fieldName]  == $fieldValue) {
+                $changed = false;
+            }
+        }
+        $this->mongoObject["versions"][$period]["content"][$fieldName]  = $fieldValue;
         return $changed;
     }
 
     function save() {
         $status = $this->realData->documents->update(array("_id" => $this->mongoId), $this->mongoObject, array("upsert" => true));
-
         $ok = $status === true || isset($status["ok"]);
         if ($ok && !$status["updatedExisting"]) {
             $this->mongoId = $status["upserted"];
@@ -134,18 +142,18 @@ class Document extends \documongo\MongoObject {
             $this->uuid = isset($this->mongoObject["uuid"]) ? $this->mongoObject["uuid"] : null;
         }
         return $ok;
-    }
+    } 
 
     function delete() {
         $status = $this->realData->documents->remove(array("_id" => $this->mongoId));
-
         $ok = $status === true || isset($status["ok"]);
         return $ok;
     }
 
     static function find($mn, $prefix, $type) {
 
-$elems = array();
+        $elems = array();
+
         $entries = $mn->selectDB($prefix . "data")->documents->find(array("type" => $type));
         foreach ($entries as $entry) {
             $elems[] = new self($mn, $prefix, $entry);
@@ -310,8 +318,8 @@ $elems = array();
         //         )
         //     )
         // );
-
         // $entry = $this->realData->documents->findOne($query);
+        
         if (isset($this->mongoObject["versions"]) && is_array($this->mongoObject["versions"])) {
             foreach ($this->mongoObject["versions"] as $vkey => $version) {
                 if ((string)$version["_id"] && (string)$version["_id"] == $id) {
@@ -320,7 +328,7 @@ $elems = array();
                 }
             }
         }
-        var_dump(count($this->mongoObject["versions"]));
+        //var_dump(count($this->mongoObject["versions"]));
         $ok = $this->save();
 
         return $deletedVersion;
@@ -387,7 +395,7 @@ $elems = array();
             if (isset($entry["versions"]) && is_array($entry["versions"])) {
                 $versions = $entry["versions"];
             }
-            // var_dump($versions);
+         //     var_dump($versions);
         }
 
         return $versions;
